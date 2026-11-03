@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network Headers Explained</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --ink:#1d2433; --muted:#5b6578; --line:#d9e0ec;
+    --c1:#dbeafe; --c2:#dcfce7; --c3:#fef3c7; --c4:#fce7f3; --c5:#ede9fe; --c6:#e0f2fe; --c7:#fee2e2;
+    --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  header.top{background:#1e293b;color:#fff;padding:28px 16px;text-align:center}
+  header.top h1{margin:0 0 6px;font-size:1.7rem}
+  header.top p{margin:0;color:#cbd5e1}
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;z-index:5}
+  nav a{font-size:.85rem;text-decoration:none;color:var(--accent);padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
+  nav a:hover{background:var(--accent);color:#fff}
+  main{max-width:960px;margin:0 auto;padding:16px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:20px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h2{margin:0 0 4px;font-size:1.4rem}
+  h3{margin:22px 0 8px;font-size:1.05rem;color:#334155}
+  .tag{display:inline-block;font-size:.75rem;background:#e0e7ff;color:#3730a3;padding:2px 9px;border-radius:999px;margin-bottom:8px}
+  .simple{background:#f0f9ff;border-left:4px solid #38bdf8;padding:10px 14px;border-radius:6px;margin:10px 0}
+  .diagram{overflow-x:auto;padding:6px 0}
+  .box{min-width:560px}
+  .row{display:flex;margin-bottom:-1px}
+  .cell{border:1px solid #475569;padding:8px 6px;text-align:center;font-size:.85rem;margin-right:-1px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:42px}
+  .cell small{display:block;color:#475569;font-size:.7rem}
+  .c1{background:var(--c1)}.c2{background:var(--c2)}.c3{background:var(--c3)}.c4{background:var(--c4)}.c5{background:var(--c5)}.c6{background:var(--c6)}.c7{background:var(--c7)}
+  .ruler{display:flex;justify-content:space-between;font-size:.7rem;color:#64748b;margin-bottom:2px}
+  .lbl{font-weight:600;font-size:.8rem;color:#334155;margin:10px 0 4px}
+  table{width:100%;border-collapse:collapse;font-size:.92rem;margin-top:6px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9}
+  td:first-child{font-weight:600;white-space:nowrap}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:.88em}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+  .legend{font-size:.82rem;color:var(--muted);margin:6px 0}
+  .flow{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+  .step{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fafcff}
+  .step .n{background:var(--accent);color:#fff;border-radius:50%;width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .step .dir{font-size:.75rem;color:#64748b}
+  .tip{background:#fefce8;border-left:4px solid #eab308;padding:10px 14px;border-radius:6px;margin:12px 0;font-size:.92rem}
+  footer{text-align:center;color:var(--muted);font-size:.85rem;padding:20px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Network Message / Header Formats</h1>
+  <p>HTTP · DNS · TCP · UDP · IP · DHCP · Ethernet · ARP — explained in simple English</p>
+</header>
+
+<nav>
+  <a href="#http">1. HTTP</a><a href="#dns">2. DNS</a><a href="#tcp">3. TCP</a><a href="#udp">4. UDP</a>
+  <a href="#ip">5. IP</a><a href="#dhcp">6. DHCP</a><a href="#eth">7. Ethernet</a><a href="#arp">8. ARP</a><a href="#icmp">9. ICMP</a>
+</nav>
+
+<main>
+
+<div class="simple">
+  <b>Big idea:</b> Every protocol sends data in a fixed "envelope" layout. The <b>header</b> is the address/instruction part of the envelope. The <b>data (payload / body)</b> is the actual letter inside. Knowing the header fields tells you <i>who sent it, who gets it, and how to handle it</i>.
+  <br><b>Layers order (top → bottom):</b> Application (HTTP, DNS, DHCP) → Transport (TCP, UDP) → Network (IP, ARP) → Data Link (Ethernet).
+</div>
+
+<!-- ================= HTTP ================= -->
+<section id="http">
+  <span class="tag">Application layer</span>
+  <h2>1. HTTP Message Format</h2>
+  <p>HTTP is how your browser talks to a website. There are <b>two</b> message types: <b>Request</b> (browser asks) and <b>Response</b> (server answers). Both are plain text.</p>
+  <p class="legend"><b>Legend:</b> sp = Space, cr = Carriage Return, lf = Line Feed (cr + lf together = "end of this line", like pressing Enter).</p>
+
+  <div class="two">
+    <div>
+      <div class="lbl">REQUEST message (Browser → Server)</div>
+      <div class="diagram"><div class="box" style="min-width:380px">
+        <div class="lbl">Request line</div>
+        <div class="row">
+          <div class="cell c1" style="flex:3">Method</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c1" style="flex:3">URL</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c1" style="flex:3">Version</div><div class="cell" style="flex:1">cr lf</div>
+        </div>
+        <div class="lbl">Header lines (many)</div>
+        <div class="row">
+          <div class="cell c2" style="flex:4">Header name</div><div class="cell" style="flex:1">:</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c2" style="flex:3">Value</div><div class="cell" style="flex:1">cr lf</div>
+        </div>
+        <div class="row"><div class="cell" style="flex:1;min-height:26px">• • •  (more header lines)</div></div>
+        <div class="lbl">Blank line</div>
+        <div class="row"><div class="cell c3" style="flex:1">cr lf  (marks "headers finished")</div></div>
+        <div class="lbl">Body</div>
+        <div class="row"><div class="cell c6" style="flex:1;min-height:60px">Variable number of lines<small>(present only in some messages)</small></div></div>
+      </div></div>
+    </div>
+
+    <div>
+      <div class="lbl">RESPONSE message (Server → Browser)</div>
+      <div class="diagram"><div class="box" style="min-width:380px">
+        <div class="lbl">Status line</div>
+        <div class="row">
+          <div class="cell c1" style="flex:3">Version</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c1" style="flex:3">Status code</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c1" style="flex:3">Phrase</div><div class="cell" style="flex:1">cr lf</div>
+        </div>
+        <div class="lbl">Header lines (many)</div>
+        <div class="row">
+          <div class="cell c2" style="flex:4">Header name</div><div class="cell" style="flex:1">:</div><div class="cell" style="flex:1">sp</div>
+          <div class="cell c2" style="flex:3">Value</div><div class="cell" style="flex:1">cr lf</div>
+        </div>
+        <div class="row"><div class="cell" style="flex:1;min-height:26px">• • •  (more header lines)</div></div>
+        <div class="lbl">Blank line</div>
+        <div class="row"><div class="cell c3" style="flex:1">cr lf</div></div>
+        <div class="lbl">Body</div>
+        <div class="row"><div class="cell c6" style="flex:1;min-height:60px">Variable number of lines<small>(present only in some messages)</small></div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Part / Field</th><th>Simple meaning</th><th>Example</th></tr>
+    <tr><td>Method</td><td>What action the browser wants. GET = "give me this page", POST = "I'm sending you data (like a form)", PUT = "replace/upload this", DELETE = "remove this", HEAD = "just the headers, no body".</td><td><code>GET</code></td></tr>
+    <tr><td>URL</td><td>Which resource (page/file) you want on the server.</td><td><code>/index.html</code></td></tr>
+    <tr><td>Version</td><td>Which HTTP version is being used.</td><td><code>HTTP/1.1</code></td></tr>
+    <tr><td>Status code</td><td>A number telling the result. 200 = OK, 301 = moved, 404 = not found, 500 = server error.</td><td><code>200</code></td></tr>
+    <tr><td>Phrase</td><td>Human-readable text for the status code.</td><td><code>OK</code>, <code>Not Found</code></td></tr>
+    <tr><td>Header name : Value</td><td>Extra information as pairs. E.g. <code>Host: www.site.com</code>, <code>User-Agent: Chrome</code>, <code>Content-Type: text/html</code>, <code>Content-Length: 1200</code>.</td><td><code>Host: example.com</code></td></tr>
+    <tr><td>sp / cr / lf</td><td>Just separators. <b>sp</b> = space between items; <b>cr+lf</b> = end of a line.</td><td>—</td></tr>
+    <tr><td>Blank line</td><td>An empty line (only cr lf). It tells the receiver: "Headers are over, body starts next."</td><td>—</td></tr>
+    <tr><td>Body</td><td>The actual data: HTML page in a response, or form data in a POST request. Many GET requests have <b>no body</b>.</td><td>HTML text</td></tr>
+  </table>
+  <div class="tip"><b>Remember:</b> Request starts with a <i>Request line</i> (Method URL Version). Response starts with a <i>Status line</i> (Version Code Phrase). Everything else is the same layout.</div>
+</section>
+
+<!-- ================= DNS ================= -->
+<section id="dns">
+  <span class="tag">Application layer · uses UDP (port 53)</span>
+  <h2>2. DNS Message Format</h2>
+  <p>DNS is the "phone book of the internet": it turns a name like <code>google.com</code> into an IP address. The <b>query</b> and the <b>response</b> use the <b>same format</b>.</p>
+
+  <div class="diagram"><div class="box">
+    <div class="ruler"><span>0</span><span>16</span><span>31 (bits)</span></div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Identification<small>16 bits</small></div>
+      <div class="cell c1" style="flex:1">Flags<small>16 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Number of questions</div>
+      <div class="cell c1" style="flex:1">Number of answer RRs</div>
+    </div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Number of authority RRs</div>
+      <div class="cell c1" style="flex:1">Number of additional RRs</div>
+    </div>
+    <div class="lbl">↑ These first 3 rows = <b>12-byte header</b> &nbsp; | &nbsp; ↓ below = the variable-length sections</div>
+    <div class="row"><div class="cell c2" style="flex:1">Questions<small>(variable number of questions) – name &amp; type fields for a query</small></div></div>
+    <div class="row"><div class="cell c3" style="flex:1">Answers<small>(variable number of resource records) – RRs in response to query</small></div></div>
+    <div class="row"><div class="cell c4" style="flex:1">Authority<small>(variable number of resource records) – records for authoritative servers</small></div></div>
+    <div class="row"><div class="cell c5" style="flex:1">Additional information<small>(variable number of resource records) – extra "helpful" info that may be used</small></div></div>
+  </div></div>
+
+  <h3>Header fields (the 12 bytes)</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Identification (16 bits)</td><td>A random ID number. The reply copies the same number so the client knows <i>which question</i> this answer belongs to.</td></tr>
+    <tr><td>Flags (16 bits)</td><td>Small on/off switches: <b>QR</b> (0 = query, 1 = response), <b>Opcode</b> (type of query), <b>AA</b> (answer is from an authoritative server), <b>TC</b> (message was truncated), <b>RD</b> (recursion desired – "please find it for me"), <b>RA</b> (recursion available), <b>Rcode</b> (error code, 0 = no error).</td></tr>
+    <tr><td>Number of questions</td><td>How many entries are in the Questions section (usually 1).</td></tr>
+    <tr><td>Number of answer RRs</td><td>How many records are in the Answers section.</td></tr>
+    <tr><td>Number of authority RRs</td><td>How many records are in the Authority section.</td></tr>
+    <tr><td>Number of additional RRs</td><td>How many records are in the Additional section.</td></tr>
+  </table>
+  <p class="legend">RR = Resource Record (one piece of DNS data, like "google.com → 142.250.x.x").</p>
+
+  <h3>Body sections</h3>
+  <table>
+    <tr><th>Section</th><th>What it holds</th></tr>
+    <tr><td>Questions</td><td>The name being asked (e.g. <code>www.example.com</code>) and the type (A = IPv4 address, AAAA = IPv6, MX = mail server, NS = name server, CNAME = alias).</td></tr>
+    <tr><td>Answers</td><td>The actual answer record(s) to your question, e.g. the IP address.</td></tr>
+    <tr><td>Authority</td><td>Tells which name servers are the official owners ("authoritative") of that domain.</td></tr>
+    <tr><td>Additional information</td><td>Bonus info that might save you another query, e.g. the IP of the name server mentioned in Authority.</td></tr>
+  </table>
+</section>
+
+<!-- ================= TCP ================= -->
+<section id="tcp">
+  <span class="tag">Transport layer</span>
+  <h2>3. TCP Packet (Segment) Structure</h2>
+  <p>TCP is <b>connection-oriented</b> and <b>reliable</b>: it sets up a connection first, numbers every byte, checks for errors, and resends lost data. Used by HTTP, HTTPS, FTP, email.</p>
+
+  <div class="diagram"><div class="box">
+    <div class="ruler"><span>0</span><span>15 | 16</span><span>31 (bits)</span></div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Source Port<small>16 bits</small></div>
+      <div class="cell c1" style="flex:1">Destination Port<small>16 bits</small></div>
+    </div>
+    <div class="row"><div class="cell c2" style="flex:1">Sequence Number<small>32 bits</small></div></div>
+    <div class="row"><div class="cell c2" style="flex:1">Acknowledgement Number<small>32 bits</small></div></div>
+    <div class="row">
+      <div class="cell c3" style="flex:4">Data Offset<small>4 bits</small></div>
+      <div class="cell c3" style="flex:6">Reserved<small>6 bits</small></div>
+      <div class="cell c7" style="flex:1">URG</div><div class="cell c7" style="flex:1">ACK</div><div class="cell c7" style="flex:1">PSH</div>
+      <div class="cell c7" style="flex:1">RST</div><div class="cell c7" style="flex:1">SYN</div><div class="cell c7" style="flex:1">FIN</div>
+      <div class="cell c4" style="flex:16">Window Size<small>16 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c5" style="flex:1">Checksum<small>16 bits</small></div>
+      <div class="cell c5" style="flex:1">Urgent Pointer<small>16 bits</small></div>
+    </div>
+    <div class="lbl">↑ Above = fixed <b>20-byte header</b></div>
+    <div class="row"><div class="cell c6" style="flex:1">Options<small>(optional, variable)</small></div></div>
+    <div class="row"><div class="cell" style="flex:1;min-height:56px;background:#f1f5f9">Data<small>(the payload from the application)</small></div></div>
+  </div></div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Source Port (16)</td><td>The "door number" on the <b>sender's</b> computer that this data comes from (identifies the sending app).</td></tr>
+    <tr><td>Destination Port (16)</td><td>The "door number" on the <b>receiver's</b> computer it should go to. E.g. 80 = HTTP, 443 = HTTPS, 25 = SMTP.</td></tr>
+    <tr><td>Sequence Number (32)</td><td>Number of the first data byte in this segment. Lets the receiver put pieces back in the right order.</td></tr>
+    <tr><td>Acknowledgement Number (32)</td><td>"I got everything up to here; send me this byte number next." Proves delivery.</td></tr>
+    <tr><td>Data Offset (4)</td><td>Length of the TCP header (in 4-byte words). Tells where the data begins.</td></tr>
+    <tr><td>Reserved (6)</td><td>Not used now; kept empty (zeros) for the future.</td></tr>
+    <tr><td>URG</td><td>Urgent flag – this segment has urgent data (see Urgent Pointer).</td></tr>
+    <tr><td>ACK</td><td>Acknowledgement flag – the Ack Number field is valid.</td></tr>
+    <tr><td>PSH</td><td>Push flag – deliver this data to the application immediately, don't wait.</td></tr>
+    <tr><td>RST</td><td>Reset flag – break the connection abruptly (something went wrong).</td></tr>
+    <tr><td>SYN</td><td>Synchronize flag – start a new connection (used in the 3-way handshake).</td></tr>
+    <tr><td>FIN</td><td>Finish flag – I'm done sending; close the connection politely.</td></tr>
+    <tr><td>Window Size (16)</td><td>Flow control: how many bytes the receiver can accept right now ("my buffer space").</td></tr>
+    <tr><td>Checksum (16)</td><td>Error check over header + data. If it doesn't match, the segment is damaged and dropped.</td></tr>
+    <tr><td>Urgent Pointer (16)</td><td>Points to where the urgent data ends (only used when URG = 1).</td></tr>
+    <tr><td>Options</td><td>Optional extras, e.g. maximum segment size, window scaling, timestamps.</td></tr>
+    <tr><td>Data</td><td>The actual payload (e.g. part of a web page).</td></tr>
+  </table>
+</section>
+
+<!-- ================= UDP ================= -->
+<section id="udp">
+  <span class="tag">Transport layer</span>
+  <h2>4. UDP Packet Structure</h2>
+  <p>UDP is <b>connectionless</b> and <b>simple</b>: just send it, no handshake, no guarantee. It's fast. Used by DNS, DHCP, video calls, online games, streaming.</p>
+
+  <div class="diagram"><div class="box" style="min-width:420px">
+    <div class="ruler"><span>0</span><span>16</span><span>31 (bits)</span></div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Source port number<small>16 bits</small></div>
+      <div class="cell c1" style="flex:1">Destination port number<small>16 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c2" style="flex:1">Total length<small>16 bits</small></div>
+      <div class="cell c2" style="flex:1">Checksum<small>16 bits</small></div>
+    </div>
+    <div class="lbl">↑ Header = only <b>8 bytes</b> (4 fields)</div>
+    <div class="row"><div class="cell c6" style="flex:1;min-height:56px">Data</div></div>
+  </div></div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Source port (16)</td><td>Port of the sending application.</td></tr>
+    <tr><td>Destination port (16)</td><td>Port of the receiving application (e.g. 53 for DNS, 67/68 for DHCP).</td></tr>
+    <tr><td>Total length (16)</td><td>Size of the whole UDP packet = 8-byte header + data.</td></tr>
+    <tr><td>Checksum (16)</td><td>Basic error check to see if the packet got damaged.</td></tr>
+  </table>
+  <div class="tip"><b>Answer to the question in your notes:</b> A UDP header has <b>4 fields</b> – source port, destination port, length and checksum.</div>
+
+  <h3>TCP vs UDP – quick compare</h3>
+  <table>
+    <tr><th></th><th>TCP</th><th>UDP</th></tr>
+    <tr><td>Connection</td><td>Yes (handshake)</td><td>No</td></tr>
+    <tr><td>Reliable?</td><td>Yes – resends lost data, keeps order</td><td>No guarantee</td></tr>
+    <tr><td>Header size</td><td>20 bytes (min)</td><td>8 bytes</td></tr>
+    <tr><td>Speed</td><td>Slower</td><td>Faster</td></tr>
+    <tr><td>Used for</td><td>Web, email, file transfer</td><td>DNS, DHCP, video, games</td></tr>
+  </table>
+</section>
+
+<!-- ================= IP ================= -->
+<section id="ip">
+  <span class="tag">Network layer</span>
+  <h2>5. IPv4 Header</h2>
+  <p>IP gives every device an address and moves packets from the source computer to the destination computer across many networks (routers). It is "best effort" – no delivery guarantee.</p>
+
+  <div class="diagram"><div class="box">
+    <div class="ruler"><span>0</span><span>4</span><span>8</span><span>12</span><span>16</span><span>20</span><span>24</span><span>28</span><span>32</span></div>
+    <div class="row">
+      <div class="cell c1" style="flex:4">Version<small>4 bits</small></div>
+      <div class="cell c1" style="flex:4">IHL<small>4 bits</small></div>
+      <div class="cell c2" style="flex:8">Type of Service (TOS)<small>8 bits</small></div>
+      <div class="cell c3" style="flex:16">Total Length<small>16 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c3" style="flex:16">Identification<small>16 bits</small></div>
+      <div class="cell c7" style="flex:3">Flags<small>3 bits</small></div>
+      <div class="cell c4" style="flex:13">Fragment Offset<small>13 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c5" style="flex:8">Time To Live (TTL)<small>8 bits</small></div>
+      <div class="cell c5" style="flex:8">Protocol<small>8 bits</small></div>
+      <div class="cell c6" style="flex:16">Header Checksum<small>16 bits</small></div>
+    </div>
+    <div class="row"><div class="cell c1" style="flex:1">Source Address<small>32 bits</small></div></div>
+    <div class="row"><div class="cell c2" style="flex:1">Destination Address<small>32 bits</small></div></div>
+    <div class="row">
+      <div class="cell c3" style="flex:3">Options<small>(optional)</small></div>
+      <div class="cell c3" style="flex:1">Padding</div>
+    </div>
+    <div class="row"><div class="cell" style="flex:1;min-height:50px;background:#dcfce7">Data (TCP / UDP segment etc.)</div></div>
+  </div></div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Version (4)</td><td>IP version. IPv4 → value 4.</td></tr>
+    <tr><td>IHL – Internet Header Length (4)</td><td>Size of the IP header in 4-byte words. Minimum is 5 (= 20 bytes). Bigger if Options are used.</td></tr>
+    <tr><td>Type of Service / TOS (8)</td><td>Tells routers how important/fast this packet is (priority). Split into: <b>Precedence</b> (priority level), <b>Delay</b> (want low delay), <b>Throughput</b> (want high speed), <b>Reliability</b> (want reliable path), <b>Reserved</b> (unused).</td></tr>
+    <tr><td>Total Length (16)</td><td>Whole packet size (header + data) in bytes. Maximum 65,535.</td></tr>
+    <tr><td>Identification (16)</td><td>An ID number for the packet. If a packet is cut into pieces, all pieces share the same ID so they can be joined back.</td></tr>
+    <tr><td>Flags (3)</td><td><b>Reserved</b> (always 0) · <b>DF – Don't Fragment</b> (1 = don't cut this packet into pieces) · <b>MF – More Fragments</b> (1 = more pieces follow; 0 = this is the last piece).</td></tr>
+    <tr><td>Fragment Offset (13)</td><td>Position of this piece within the original packet, so pieces can be put in order.</td></tr>
+    <tr><td>Time To Live – TTL (8)</td><td>A countdown. Each router subtracts 1. At 0 the packet is thrown away. Stops packets looping forever.</td></tr>
+    <tr><td>Protocol (8)</td><td>What is inside the data: 6 = TCP, 17 = UDP, 1 = ICMP.</td></tr>
+    <tr><td>Header Checksum (16)</td><td>Error check for the <i>header only</i> (recalculated at every router because TTL changes).</td></tr>
+    <tr><td>Source Address (32)</td><td>IP address of the sender, e.g. <code>192.168.1.5</code>.</td></tr>
+    <tr><td>Destination Address (32)</td><td>IP address of the receiver.</td></tr>
+    <tr><td>Options + Padding</td><td>Rarely used extras (security, routing, timestamp). Padding adds zeros so the header ends on a 32-bit boundary.</td></tr>
+    <tr><td>Data</td><td>The payload, e.g. a TCP or UDP segment.</td></tr>
+  </table>
+</section>
+
+<!-- ================= DHCP ================= -->
+<section id="dhcp">
+  <span class="tag">Application layer · uses UDP (ports 67 server, 68 client)</span>
+  <h2>6. DHCP – Getting an IP Address (4 steps)</h2>
+  <p>When a new device joins a network it has no IP address. DHCP automatically gives it one. Remember the word <b>DORA</b>: <b>D</b>iscover, <b>O</b>ffer, <b>R</b>equest, <b>A</b>CK.</p>
+  <p class="legend">Example: DHCP server = <code>223.1.2.5</code>; arriving client has no address yet (<code>0.0.0.0</code>).</p>
+
+  <div class="flow">
+    <div class="step"><div class="n">1</div><div>
+      <b>DHCP Discover</b> <span class="dir">(Client → everyone, broadcast)</span><br>
+      "Is there any DHCP server out there? I need an IP address!"<br>
+      <code>src: 0.0.0.0, 68</code> · <code>dest: 255.255.255.255, 67</code> · <code>yiaddr: 0.0.0.0</code> · <code>transaction ID: 654</code>
+    </div></div>
+    <div class="step"><div class="n">2</div><div>
+      <b>DHCP Offer</b> <span class="dir">(Server → client)</span><br>
+      "Yes, I'm here. You can use this address: 223.1.2.4 for 3600 seconds."<br>
+      <code>src: 223.1.2.5, 67</code> · <code>dest: 255.255.255.255, 68</code> · <code>yiaddr: 223.1.2.4</code> · <code>transaction ID: 654</code> · <code>lifetime: 3600 secs</code>
+    </div></div>
+    <div class="step"><div class="n">3</div><div>
+      <b>DHCP Request</b> <span class="dir">(Client → server, broadcast)</span><br>
+      "Great, I accept that address 223.1.2.4, please give it to me."<br>
+      <code>src: 0.0.0.0, 68</code> · <code>dest: 255.255.255.255, 67</code> · <code>yiaddr: 223.1.2.4</code> · <code>transaction ID: 655</code> · <code>lifetime: 3600 secs</code>
+    </div></div>
+    <div class="step"><div class="n">4</div><div>
+      <b>DHCP ACK</b> <span class="dir">(Server → client)</span><br>
+      "Confirmed! The address is yours for 3600 seconds."<br>
+      <code>src: 223.1.2.5, 67</code> · <code>dest: 255.255.255.255, 68</code> · <code>yiaddr: 223.1.2.4</code> · <code>transaction ID: 655</code> · <code>lifetime: 3600 secs</code>
+    </div></div>
+  </div>
+
+  <h3>What each item in the boxes means</h3>
+  <table>
+    <tr><th>Item</th><th>Simple meaning</th></tr>
+    <tr><td>src</td><td>Sender's IP address and port number.</td></tr>
+    <tr><td>dest</td><td>Receiver's IP address and port. <code>255.255.255.255</code> = broadcast = "send to everyone on this network".</td></tr>
+    <tr><td>Port 67 / 68</td><td>67 = DHCP server port, 68 = DHCP client port.</td></tr>
+    <tr><td>yiaddr ("your Internet address")</td><td>The IP address being given to the client. <code>0.0.0.0</code> means "not assigned yet".</td></tr>
+    <tr><td>transaction ID</td><td>A number to match replies with the right request (654 for Discover/Offer, 655 for Request/ACK in the slide).</td></tr>
+    <tr><td>lifetime</td><td>How long the client may keep the address (lease time), here 3600 seconds = 1 hour. After that it must renew.</td></tr>
+  </table>
+</section>
+
+<!-- ================= Ethernet ================= -->
+<section id="eth">
+  <span class="tag">Data link layer</span>
+  <h2>7. Ethernet Frame Format</h2>
+  <p>On a local network (LAN), data travels in <b>frames</b>. The frame uses <b>MAC addresses</b> (hardware addresses burned into network cards) to reach the next device.</p>
+
+  <div class="diagram"><div class="box">
+    <div class="row">
+      <div class="cell" style="flex:7;background:#1e293b;color:#fff">Preamble<small style="color:#cbd5e1">7 bytes</small></div>
+      <div class="cell" style="flex:1;background:#334155;color:#fff">SFD<small style="color:#cbd5e1">1 byte</small></div>
+      <div class="cell c1" style="flex:6">Destination address<small>6 bytes</small></div>
+      <div class="cell c2" style="flex:6">Source address<small>6 bytes</small></div>
+      <div class="cell c3" style="flex:2">Type<small>2 bytes</small></div>
+      <div class="cell c6" style="flex:14">Data and padding<small>46 – 1500 bytes</small></div>
+      <div class="cell c7" style="flex:4">CRC<small>4 bytes</small></div>
+    </div>
+    <div class="lbl">Preamble + SFD = "physical-layer header" (8 bytes, not counted in the frame length)</div>
+    <p class="legend">Minimum frame length = 512 bits (64 bytes) · Maximum frame length = 12,144 bits (1518 bytes)</p>
+  </div></div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Preamble (7 bytes)</td><td>56 bits of alternating 1s and 0s (10101010…). Like a "wake-up beep" that lets the receiver sync its clock.</td></tr>
+    <tr><td>SFD (1 byte)</td><td>Start Frame Delimiter = <code>10101011</code>. Says "the real frame starts right after this."</td></tr>
+    <tr><td>Destination address (6)</td><td>MAC address of the device that should receive this frame (e.g. <code>AA:BB:CC:11:22:33</code>).</td></tr>
+    <tr><td>Source address (6)</td><td>MAC address of the device that sent it.</td></tr>
+    <tr><td>Type (2)</td><td>What protocol is inside: <code>0x0800</code> = IPv4, <code>0x0806</code> = ARP, <code>0x86DD</code> = IPv6.</td></tr>
+    <tr><td>Data and padding (46–1500)</td><td>The payload (e.g. an IP packet). If data is under 46 bytes, padding is added to reach the minimum. Max 1500 bytes (this is the MTU).</td></tr>
+    <tr><td>CRC (4)</td><td>Cyclic Redundancy Check – error detection. If it doesn't match, the frame is damaged and discarded.</td></tr>
+  </table>
+  <div class="tip"><b>Size maths:</b> 6 + 6 + 2 + 46 + 4 = <b>64 bytes</b> minimum frame; 6 + 6 + 2 + 1500 + 4 = <b>1518 bytes</b> maximum frame.</div>
+</section>
+
+<!-- ================= ARP ================= -->
+<section id="arp">
+  <span class="tag">Between Network and Data link layer</span>
+  <h2>8. ARP Protocol &amp; Packet Format</h2>
+  <div class="simple"><b>What ARP does:</b> You know the IP address of a device, but the LAN needs its <b>MAC address</b>. ARP finds it: <b>IP → MAC address</b>. ARP takes an IP address from the IP protocol, finds the matching link-layer (MAC) address, and hands it to the data-link layer.</div>
+
+  <p><b>ARP Request:</b> <i>Broadcast</i> – "Who has IP 192.168.1.10? Tell me your MAC!" (sent to everybody).<br>
+     <b>ARP Reply:</b> <i>Unicast</i> – only the owner answers directly: "That's me, my MAC is …".</p>
+
+  <div class="diagram"><div class="box" style="min-width:480px">
+    <div class="ruler"><span>0</span><span>8</span><span>16</span><span>31 (bits)</span></div>
+    <div class="row">
+      <div class="cell c1" style="flex:1">Hardware Type<small>16 bits</small></div>
+      <div class="cell c1" style="flex:1">Protocol Type<small>16 bits</small></div>
+    </div>
+    <div class="row">
+      <div class="cell c2" style="flex:1">Hardware length<small>8 bits</small></div>
+      <div class="cell c2" style="flex:1">Protocol length<small>8 bits</small></div>
+      <div class="cell c3" style="flex:2">Operation<small>16 bits · Request = 1, Reply = 2</small></div>
+    </div>
+    <div class="row"><div class="cell c4" style="flex:1">Source hardware address<small>(sender's MAC)</small></div></div>
+    <div class="row"><div class="cell c5" style="flex:1">Source protocol address<small>(sender's IP)</small></div></div>
+    <div class="row"><div class="cell c6" style="flex:1">Destination hardware address<small>(target's MAC – <b>empty in a request</b>)</small></div></div>
+    <div class="row"><div class="cell c7" style="flex:1">Destination protocol address<small>(target's IP)</small></div></div>
+  </div></div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Hardware Type (16)</td><td>Which type of network hardware. Ethernet = <code>1</code>.</td></tr>
+    <tr><td>Protocol Type (16)</td><td>Which network protocol is being resolved. IPv4 = <code>0x0800</code>.</td></tr>
+    <tr><td>Hardware length (8)</td><td>Size of a hardware (MAC) address in bytes = <code>6</code> for Ethernet.</td></tr>
+    <tr><td>Protocol length (8)</td><td>Size of a protocol (IP) address in bytes = <code>4</code> for IPv4.</td></tr>
+    <tr><td>Operation (16)</td><td><code>1</code> = ARP Request, <code>2</code> = ARP Reply.</td></tr>
+    <tr><td>Source hardware address</td><td>MAC address of the sender of this ARP message.</td></tr>
+    <tr><td>Source protocol address</td><td>IP address of the sender.</td></tr>
+    <tr><td>Destination hardware address</td><td>MAC address of the target. In a <b>request it is empty (all zeros)</b> because that's exactly what we're trying to find. Filled in the reply.</td></tr>
+    <tr><td>Destination protocol address</td><td>IP address of the target we are looking for.</td></tr>
+  </table>
+
+  <h3>Tiny example</h3>
+  <div class="flow">
+    <div class="step"><div class="n">1</div><div><b>Request (broadcast):</b> "Who has <code>192.168.1.10</code>? Tell <code>192.168.1.5</code> (my MAC = AA:AA…)". Target MAC field is empty.</div></div>
+    <div class="step"><div class="n">2</div><div><b>Reply (unicast):</b> "<code>192.168.1.10</code> is at MAC <code>BB:BB…</code>" – sent only to the asker.</div></div>
+    <div class="step"><div class="n">3</div><div>The asker saves this in its <b>ARP cache</b> and now builds an Ethernet frame with the right destination MAC.</div></div>
+  </div>
+</section>
+
+<!-- ================= ICMP ================= -->
+<section id="icmp">
+  <span class="tag">Network layer · companion of IP</span>
+  <h2>9. ICMP Protocol &amp; Message Format</h2>
+  <div class="simple"><b>What ICMP does:</b> IP just sends packets and does not tell you if something went wrong. ICMP (Internet Control Message Protocol, version 4) is IP's helper. It fixes two weaknesses of IP: <b>(1) no error reporting</b> (if a packet is lost, nobody is told) and <b>(2) no way to ask questions</b> (like "is that host alive?"). ICMP messages travel inside IP packets.</div>
+
+  <p>ICMP messages are of <b>2 types</b>:</p>
+  <ol>
+    <li><b>Error-reporting message</b> – a router/host says "something went wrong with your packet".</li>
+    <li><b>Query message</b> – a host asks a question and gets an answer (e.g. ping).</li>
+  </ol>
+
+  <div class="two">
+    <div>
+      <div class="lbl">Error-reporting message</div>
+      <div class="diagram"><div class="box" style="min-width:340px">
+        <div class="ruler"><span>8 bits</span><span>8 bits</span><span>16 bits</span></div>
+        <div class="row">
+          <div class="cell c1" style="flex:8">Type</div>
+          <div class="cell c1" style="flex:8">Code</div>
+          <div class="cell c1" style="flex:16">Checksum</div>
+        </div>
+        <div class="row"><div class="cell c3" style="flex:1">Rest of the header<small>(4 bytes, depends on the type)</small></div></div>
+        <div class="row"><div class="cell" style="flex:1;min-height:70px;background:#fff">Data section<small>(IP header + first 8 bytes of the bad packet)</small></div></div>
+      </div></div>
+    </div>
+    <div>
+      <div class="lbl">Query message</div>
+      <div class="diagram"><div class="box" style="min-width:340px">
+        <div class="ruler"><span>8 bits</span><span>8 bits</span><span>16 bits</span></div>
+        <div class="row">
+          <div class="cell c1" style="flex:8">Type</div>
+          <div class="cell c1" style="flex:8">Code</div>
+          <div class="cell c1" style="flex:16">Checksum</div>
+        </div>
+        <div class="row">
+          <div class="cell c3" style="flex:16">Identifier</div>
+          <div class="cell c3" style="flex:16">Sequence number</div>
+        </div>
+        <div class="row"><div class="cell" style="flex:1;min-height:70px;background:#fff">Data section<small>(optional extra data)</small></div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <h3>Fields explained</h3>
+  <table>
+    <tr><th>Field</th><th>Simple meaning</th></tr>
+    <tr><td>Type (8)</td><td>The main kind of message. <code>8</code> = Echo Request (ping), <code>0</code> = Echo Reply, <code>3</code> = Destination Unreachable, <code>11</code> = Time Exceeded, <code>5</code> = Redirect, <code>12</code> = Parameter Problem, <code>4</code> = Source Quench (slow down).</td></tr>
+    <tr><td>Code (8)</td><td>A more detailed reason inside that type. Example: Type 3 with Code 0 = network unreachable, Code 1 = host unreachable, Code 3 = port unreachable.</td></tr>
+    <tr><td>Checksum (16)</td><td>Error check for the whole ICMP message. Damaged message = dropped.</td></tr>
+    <tr><td>Rest of the header (error messages)</td><td>4 bytes whose meaning depends on the type. Often unused (zeros), or holds extra info (e.g. the gateway address in a Redirect).</td></tr>
+    <tr><td>Identifier (query messages)</td><td>Number that identifies which program/process sent the request, so the reply goes back to the right one.</td></tr>
+    <tr><td>Sequence number (query messages)</td><td>Counts each request (1, 2, 3 …). Lets you match each reply to its request and spot lost ones.</td></tr>
+    <tr><td>Data section</td><td><b>Error message:</b> a copy of the IP header + first 8 bytes of the packet that caused the problem, so the sender can find out which packet failed. <b>Query message:</b> optional data (ping fills it with filler bytes, which the reply sends back).</td></tr>
+  </table>
+
+  <h3>Tracing ICMP packets (Ping)</h3>
+  <p>ICMP packets can be traced using the <code>ping</code> command:</p>
+  <div class="flow">
+    <div class="step"><div class="n">1</div><div><code>ping 8.8.8.8</code> sends an <b>ICMP Echo Request</b> (Type 8, Code 0) with an identifier and sequence number.</div></div>
+    <div class="step"><div class="n">2</div><div>The other host replies with an <b>ICMP Echo Reply</b> (Type 0, Code 0), same identifier and sequence number.</div></div>
+    <div class="step"><div class="n">3</div><div>Ping shows the <b>time taken</b> (round-trip time) and the <b>TTL</b>. No reply means the host is down or blocked.</div></div>
+  </div>
+  <div class="tip"><b>Also remember:</b> <code>traceroute</code> uses ICMP <b>Time Exceeded</b> (Type 11). It sends packets with TTL = 1, 2, 3 … Each router that drops a packet (TTL hit 0) reports back, so you see every router on the path.</div>
+</section>
+
+<section>
+  <h2>Quick Summary Table</h2>
+  <table>
+    <tr><th>Protocol</th><th>Layer</th><th>Main job</th><th>Header size</th></tr>
+    <tr><td>HTTP</td><td>Application</td><td>Request/get web pages (text format)</td><td>Variable (text lines)</td></tr>
+    <tr><td>DNS</td><td>Application</td><td>Name → IP address</td><td>12 bytes + sections</td></tr>
+    <tr><td>DHCP</td><td>Application</td><td>Automatically give IP address</td><td>—  (4 steps: DORA)</td></tr>
+    <tr><td>TCP</td><td>Transport</td><td>Reliable, ordered delivery</td><td>20 bytes (min)</td></tr>
+    <tr><td>UDP</td><td>Transport</td><td>Fast, no-guarantee delivery</td><td>8 bytes</td></tr>
+    <tr><td>IP</td><td>Network</td><td>Address &amp; route packets between networks</td><td>20 bytes (min)</td></tr>
+    <tr><td>ICMP</td><td>Network</td><td>Error reports &amp; queries (ping, traceroute)</td><td>8 bytes (4 fixed + 4 rest)</td></tr>
+    <tr><td>ARP</td><td>Network/Link</td><td>IP → MAC address</td><td>28 bytes (IPv4/Ethernet)</td></tr>
+    <tr><td>Ethernet</td><td>Data link</td><td>Deliver frames inside a LAN using MAC</td><td>14 bytes + 4 CRC</td></tr>
+  </table>
+</section>
+
+</main>
+<footer>Made for easy exam revision · Good luck! 🎓</footer>
+</body>
+</html>
